@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>BiteBliss Final</title>
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI', sans-serif;
+  background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836') no-repeat center/cover;
+}
+
+/* overlay */
+.overlay{
+  width:100%;
+  height:100vh;
+  background:rgba(0,0,0,0.4);
+}
+
+/* screens */
+.screen{
+  display:none;
+  width:100%;
+  height:100vh;
+  padding:20px;
+  box-sizing:border-box;
+  color:white;
+}
+
+.active{display:block;}
+
+h2{text-align:center;}
+
+/* glass card */
+.card{
+  background:rgba(255,255,255,0.5);
+  backdrop-filter:blur(8px);
+  color:black;
+  padding:12px;
+  margin:10px 0;
+  border-radius:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* inputs */
+input,select{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+}
+
+/* buttons */
+button{
+  width:100%;
+  padding:12px;
+  background:linear-gradient(45deg,#ff4d4d,#ff9900);
+  color:white;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  font-size:15px;
+}
+
+.qty{
+  display:flex;
+  gap:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="overlay">
+
+<!-- SIGNUP -->
+<div class="screen active" id="signup">
+<h2>🍔 BiteBliss</h2>
+<input placeholder="Enter Name">
+<input placeholder="Email">
+<button onclick="go('menu')">Start Ordering</button>
+</div>
+
+<!-- MENU -->
+<div class="screen" id="menu">
+<h2>Menu</h2>
+
+<input placeholder="Search..." onkeyup="search(this.value)">
+
+<div id="menuItems"></div>
+
+<button onclick="go('cart')">🛒 Go to Cart</button>
+</div>
+
+<!-- CART -->
+<div class="screen" id="cart">
+<h2>Cart</h2>
+<div id="cartBox"></div>
+<button onclick="go('details')">Next</button>
+</div>
+
+<!-- DETAILS -->
+<div class="screen" id="details">
+<h2>Delivery Details</h2>
+<input placeholder="Mobile Number">
+<input placeholder="Address">
+
+<select>
+<option>GPay</option>
+<option>Paytm</option>
+<option>Cash on Delivery</option>
+</select>
+
+<button onclick="placeOrder()">Place Order</button>
+</div>
+
+<!-- SUCCESS -->
+<div class="screen" id="success">
+<h2>✅ Order Placed</h2>
+<p style="text-align:center;">Thank You 😊</p>
+<button onclick="go('history')">View Orders</button>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="history">
+<h2>Order History</h2>
+<div id="historyBox"></div>
+<button onclick="go('menu')">Back to Menu</button>
+</div>
+
+</div>
+
+<script>
+
+const items=[
+{name:"🍔 Veg Burger",price:80},
+{name:"🍕 Pizza",price:200},
+{name:"🥟 Veg Momos",price:60},
+{name:"🍝 Pasta",price:130},
+{name:"🍟 Fries",price:70},
+
+// NON VEG
+{name:"🍗 Chicken Biryani",price:180},
+{name:"🍖 Chicken Tandoori",price:220},
+{name:"🍗 Chicken Burger",price:150},
+{name:"🍗 Chicken Momos",price:120},
+{name:"🍤 Fish Fry",price:200}
+];
+
+let cart={};
+let history=[];
+let filtered=[...items];
+
+/* navigation */
+function go(id){
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+}
+
+/* menu */
+function loadMenu(){
+let m=document.getElementById("menuItems");
+m.innerHTML="";
+
+filtered.forEach((i,index)=>{
+let qty=cart[i.name]?cart[i.name].qty:0;
+
+m.innerHTML+=`
+<div class="card">
+<span>${i.name} ₹${i.price}</span>
+<div class="qty">
+<button onclick="change(${index},-1)">-</button>
+${qty}
+<button onclick="change(${index},1)">+</button>
+</div>
+</div>`;
+});
+}
+
+/* change qty */
+function change(i,val){
+let item=filtered[i];
+
+if(!cart[item.name]) cart[item.name]={price:item.price,qty:0};
+
+cart[item.name].qty+=val;
+
+if(cart[item.name].qty<=0) delete cart[item.name];
+
+updateCart();
+loadMenu();
+}
+
+/* cart */
+function updateCart(){
+let c=document.getElementById("cartBox");
+
+if(Object.keys(cart).length==0){
+c.innerHTML="Cart Empty";
+return;
+}
+
+let total=0,html="";
+for(let key in cart){
+let item=cart[key];
+let t=item.price*item.qty;
+total+=t;
+html+=`${key} x ${item.qty} = ₹${t}<br>`;
+}
+
+html+=`<br><b>Total ₹${total+9}</b>`;
+c.innerHTML=html;
+}
+
+/* search */
+function search(val){
+val=val.toLowerCase();
+filtered=items.filter(i=>i.name.toLowerCase().includes(val));
+loadMenu();
+}
+
+/* order */
+function placeOrder(){
+if(Object.keys(cart).length==0){
+alert("Cart empty");
+return;
+}
+
+history.push({...cart});
+cart={};
+
+showHistory();
+go("success");
+}
+
+/* history */
+function showHistory(){
+let h=document.getElementById("historyBox");
+
+if(history.length==0){
+h.innerHTML="No orders yet";
+return;
+}
+
+let html="";
+history.forEach((o,i)=>{
+html+=`<div class="card"><b>Order ${i+1}</b><br>`;
+for(let k in o){
+html+=`${k} x ${o[k].qty}<br>`;
+}
+html+="</div>";
+});
+
+h.innerHTML=html;
+}
+
+loadMenu();
+
+</script>
+
+</body>
+</html>
